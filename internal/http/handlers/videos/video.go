@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/aryanbroy/video-transcoding/internal/minio"
 	"github.com/aryanbroy/video-transcoding/internal/utils/files"
 	"github.com/aryanbroy/video-transcoding/internal/utils/response"
 )
@@ -56,6 +57,13 @@ func UploadToMinIO() http.HandlerFunc {
 			return
 		}
 
-		response.WriteJson(w, http.StatusCreated, response.CustomResponse("File created successfully", http.StatusCreated))
+		ok, err := minio.UploadToContainer(uploadPath, "video-transcoder", "video")
+		if err != nil || !ok {
+			log.Fatalln("Error uploading to container")
+			response.WriteJson(w, http.StatusBadRequest, response.GeneralError(err, http.StatusBadRequest))
+			return
+		}
+
+		response.WriteJson(w, http.StatusCreated, response.CustomResponse("File uploaded to container successfully", http.StatusCreated))
 	}
 }
