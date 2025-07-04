@@ -64,6 +64,12 @@ func UploadToMinIO() http.HandlerFunc {
 			return
 		}
 
+		err = files.DeleteFile(uploadPath)
+		if err != nil {
+			response.WriteJson(w, http.StatusBadRequest, response.GeneralError(err, http.StatusBadRequest))
+			return
+		}
+
 		response.WriteJson(w, http.StatusCreated, response.CustomResponse("File uploaded to container successfully", http.StatusCreated))
 	}
 }

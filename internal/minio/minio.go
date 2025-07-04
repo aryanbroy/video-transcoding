@@ -26,10 +26,18 @@ func UploadToContainer(filePath string, bucketName string, objectName string) (b
 
 	location := "us-east-1"
 
-	err = minioClient.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{Region: location})
+	exists, err := minioClient.BucketExists(ctx, bucketName)
 	if err != nil {
-		log.Println("Error creating bucket")
+		log.Panicln("Error checking if bucket exists or not!")
 		return false, err
+	}
+
+	if !exists {
+		err = minioClient.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{Region: location})
+		if err != nil {
+			log.Println("Error creating bucket", err)
+			return false, err
+		}
 	}
 
 	info, err := minioClient.FPutObject(ctx, bucketName, objectName, filePath, minio.PutObjectOptions{ContentType: "video/mp4"})
