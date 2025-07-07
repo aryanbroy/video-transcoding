@@ -2,14 +2,14 @@ package minio
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
-func UploadToContainer(filePath string, bucketName string, objectName string) (bool, error) {
-	ctx := context.Background()
+func UploadToContainer(ctx context.Context, filePath string, bucketName string, objectName string) (bool, error) {
 	endpoint := "localhost:9000"
 	accessKeyId := "minioadmin"
 	secrectAccessKey := "minioadmin"
@@ -19,6 +19,7 @@ func UploadToContainer(filePath string, bucketName string, objectName string) (b
 		Creds:  credentials.NewStaticV4(accessKeyId, secrectAccessKey, ""),
 		Secure: useSSL,
 	})
+
 	if err != nil {
 		log.Println("Error initializing minio client")
 		return false, err
@@ -48,4 +49,24 @@ func UploadToContainer(filePath string, bucketName string, objectName string) (b
 
 	log.Printf("Successfully upload %v to the container. Size: %v\n", objectName, info.Size)
 	return true, nil
+}
+
+func FetchVideos(ctx context.Context, minioClient *minio.Client, bucketName string) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	objectCh := minioClient.ListObjects(ctx, bucketName, minio.ListObjectsOptions{
+		Prefix:    "video",
+		Recursive: true,
+	})
+
+	for object := range objectCh {
+		if object.Err != nil {
+			fmt.Println(object.Err)
+			return object.Err
+		}
+	}
+
+	fmt.Println(objectCh)
+	return nil
 }

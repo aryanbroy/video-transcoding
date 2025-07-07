@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 
 	"github.com/aryanbroy/video-transcoding/internal/http/handlers/videos"
+	"github.com/aryanbroy/video-transcoding/internal/http/handlers/webhook"
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
 func main() {
@@ -15,11 +19,28 @@ func main() {
 	// }
 	// fmt.Println("Command ran successfully")
 	// fmt.Println(string(output))
+	ctx := context.Background()
 
 	router := http.NewServeMux()
 	addr := ":3000"
 
-	router.HandleFunc("POST /videos", videos.UploadToMinIO())
+	endpoint := "localhost:9000"
+	accessKeyId := "minioadmin"
+	secrectAccessKey := "minioadmin"
+	useSSL := false
+
+	minioClient, err := minio.New(endpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(accessKeyId, secrectAccessKey, ""),
+		Secure: useSSL,
+	})
+
+	if err != nil {
+		log.Println("Error initializing minio client")
+	}
+
+	router.HandleFunc("POST /videos", videos.UploadToMinIO(ctx, minioClient))
+	router.HandleFunc("POST /webhook", webhook.WebhookHandler())
+	router.HandleFunc("POST /webhook/", webhook.WebhookHandler())
 
 	server := http.Server{
 		Addr:    addr,
@@ -31,5 +52,4 @@ func main() {
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatalln("Error starting the server:\n", err)
 	}
-
 }
