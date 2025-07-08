@@ -1,16 +1,57 @@
 package webhook
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/aryanbroy/video-transcoding/internal/utils/response"
+	"github.com/aryanbroy/video-transcoding/internal/worker"
 )
+
+type MinIOEvent struct {
+	EventName string `json:"EventName"`
+	Key       string `json:"Key"`
+	Records   []struct {
+		EventVersion string `json:"eventVersion"`
+		S3           struct {
+			Bucket struct {
+				Name string `json:"name"`
+			} `json:"bucket"`
+			Object struct {
+				Key  string `json:"key"`
+				Size int64  `json:"size"`
+				ETag string `json:"eTag"`
+			} `json:"object"`
+		} `json:"s3"`
+	} `json:"Records"`
+}
 
 func WebhookHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.Println("Webhook triggered")
-		log.Printf("Webhook received: %s %s\nHeaders: %v\n", r.Method, r.URL.Path, r.Header)
-		response.WriteJson(w, 200, "webhook triggered")
+		var event MinIOEvent
+
+		err := json.NewDecoder(r.Body).Decode(&event)
+		if err != nil {
+			log.Println("Unable to decode body to variable")
+			response.WriteJson(w, http.StatusBadRequest, response.GeneralError(err, http.StatusBadRequest))
+			return
+		}
+
+		if len(event.Records) == 0 {
+			log.Println("No records present")
+			response.WriteJson(w, http.StatusBadRequest, response.GeneralError(err, http.StatusBadRequest))
+			return
+		}
+
+		videoName := event.Records[0].S3.Object.Key
+		log.Printf("Starting processing for: %s", videoName)
+
+		go worker.ProcessVideo(videoName)
+
+		response.WriteJson(w, 200, "Webhook triggered")
+		fmt.Println("Http response finishd")
 	}
 }
