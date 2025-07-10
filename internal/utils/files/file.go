@@ -2,7 +2,6 @@ package files
 
 import (
 	"fmt"
-	"log"
 	"os"
 )
 
@@ -27,8 +26,7 @@ func FileExists(uploadPath string) (bool, error) {
 func DeleteFile(filePath string) error {
 	err := os.RemoveAll(filePath)
 	if err != nil {
-		log.Println("Error deleting file/folder at specified path")
-		return err
+		return fmt.Errorf("Error deleting file/folder at the specified path: %w", err)
 	}
 	return nil
 }
