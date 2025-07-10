@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/aryanbroy/video-transcoding/internal/minIo"
 	"github.com/aryanbroy/video-transcoding/internal/utils/misc"
 	"github.com/aryanbroy/video-transcoding/internal/utils/response"
 	"github.com/minio/minio-go/v7"
@@ -27,16 +28,8 @@ func UploadToMinIO(ctx context.Context, minioClient *minio.Client) http.HandlerF
 		defer file.Close()
 
 		objectName := fmt.Sprintf("%s", misc.GenerateVideoId())
-		_, err = minioClient.PutObject(
-			ctx,
-			"video-transcoder",
-			objectName,
-			file,
-			header.Size,
-			minio.PutObjectOptions{
-				ContentType: header.Header.Get("Content-Type"),
-			},
-		)
+
+		err = minIo.UploadToContainer(ctx, minioClient, "video-transcoder", objectName, file, header)
 
 		if err != nil {
 			log.Printf("MinIO upload failed: %v", err)

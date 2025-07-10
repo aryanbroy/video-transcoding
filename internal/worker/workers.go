@@ -1,12 +1,20 @@
 package worker
 
 import (
+	"context"
 	"fmt"
-	"time"
+	"log"
+
+	"github.com/minio/minio-go/v7"
 )
 
-func ProcessVideo(videoName string) {
+func ProcessVideo(ctx context.Context, minioClient *minio.Client, bucketName string, objectName string) {
 	fmt.Println("Video is being processed...")
-	time.Sleep(5 * time.Second)
-	fmt.Printf("Video %v has been processed", videoName)
+
+	err := minioClient.FGetObject(ctx, bucketName, objectName, "./received/download.mp4", minio.GetObjectOptions{})
+	if err != nil {
+		log.Panicln("Error fetching video from container: \n", err)
+	}
+
+	fmt.Printf("Video %v has been processed", objectName)
 }

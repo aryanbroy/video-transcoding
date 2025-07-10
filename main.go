@@ -39,8 +39,8 @@ func main() {
 	}
 
 	router.HandleFunc("POST /videos", videos.UploadToMinIO(ctx, minioClient))
-	router.HandleFunc("POST /webhook", webhook.WebhookHandler())
-	router.HandleFunc("POST /webhook/", webhook.WebhookHandler())
+	router.HandleFunc("POST /webhook", webhook.WebhookHandler(ctx, minioClient))
+	router.HandleFunc("POST /webhook/", webhook.WebhookHandler(ctx, minioClient))
 
 	server := http.Server{
 		Addr:    addr,
